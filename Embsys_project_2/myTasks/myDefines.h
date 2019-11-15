@@ -8,6 +8,8 @@
 #ifndef MYDEFINES_H_
 #define MYDEFINES_H_
 
+//#define SHOW_MESSAGES
+
 #define RED_TEXT 	"\033[31m"
 #define GREEN_TEXT 	"\033[32m"
 #define BLUE_TEXT	"\033[33m"

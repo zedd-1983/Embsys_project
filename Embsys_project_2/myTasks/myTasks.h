@@ -9,6 +9,7 @@
 #define MYTASKS_H_
 
 
+void startupTask(void* pvParameters);
 void ledTask(void* pvParameters);
 void encoderRead(void* pvParameters);
 

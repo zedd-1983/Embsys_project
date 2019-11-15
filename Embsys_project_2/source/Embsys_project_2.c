@@ -22,13 +22,12 @@
 #include "myTasks.h"
 #include "myDefines.h"
 
-
 // my variables
 TaskHandle_t ledTaskHandle = NULL;
-TaskHandle_t encoderTaskHandle = NULL;
+TaskHandle_t startupTaskHandle = NULL;
 QueueHandle_t queueForPIT = NULL;
 
-extern SemaphoreHandle_t sw2Semaphore, sw3Semaphore, encoderSemaphore;
+extern SemaphoreHandle_t sw2Semaphore, sw3Semaphore, encoderSemaphore, startEncoderTaskSemaphore;
 
 void PORTC_IRQHandler()
 {
@@ -42,12 +41,20 @@ void PORTC_IRQHandler()
 
 void PORTB_IRQHandler()
 {
+	static uint8_t pressCount = 0;
 	BaseType_t xHigherPriorityTaskWoken;
+	for(int i = 0; i < 2000000; i++);
 	GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO, 1 << BOARD_ENC_BUTTON_PIN);
 
 	xHigherPriorityTaskWoken = pdFALSE;
-	xSemaphoreGiveFromISR(encoderSemaphore, &xHigherPriorityTaskWoken);
-	//xSemaphoreGiveFromISR(encoderToPITSemaphore, &xHigherPriorityTaskWoken);
+	// if it's a first press, create encoder task and start it
+	if(++pressCount == 1)
+		xSemaphoreGiveFromISR(startEncoderTaskSemaphore, &xHigherPriorityTaskWoken);
+	else	// otherwise it denotes confirmation of interval time
+	{
+		xSemaphoreGiveFromISR(encoderSemaphore, &xHigherPriorityTaskWoken);
+		pressCount = 0;
+	}
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
@@ -71,20 +78,28 @@ void PIT0_IRQHandler()
 
 	xHigherPriorityTaskWoken = pdFALSE;
 	if(xQueueReceiveFromISR(queueForPIT, &receivedInterval, &xHigherPriorityTaskWoken) == pdTRUE) {
+#ifdef SHOW_MESSAGES
 		PRINTF(GREEN_TEXT"\n\rReceived: %d\n\r"RESET_TEXT, receivedInterval);
+#endif
 		startCounting = true;
 	}
 
 	if(startCounting == true) {
 		secondsCount++;
-		if(secondsCount == (receivedInterval / 6)) {
+		if(secondsCount == (receivedInterval / 6)) {	// if timer expires
 			startCounting = false;
 			secondsCount = 0;
 			receivedInterval = 1;
 			PRINTF(RED_TEXT"\n\r*********** Alarm ************\n\r"RESET_TEXT);
 		}
+//		else if ((secondsCount < receivedInterval) &&	// if timer gets interrupted by another press
+//				(uxQueueMessagesWaiting(queueForPIT) > 0)) {
+//				//(xQueueIsQueueEmptyFromISR(queueForPIT) == pdFALSE)) {
+//				//(xQueueReceiveFromISR(queueForPIT, &receivedInterval, &xHigherPriorityTaskWoken) == pdTRUE)) {
+//			PRINTF("\n\rRESET\n\r");
+//			secondsCount = 0;
+//		}
 	}
-
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
@@ -110,23 +125,19 @@ int main(void) {
     NVIC_ClearPendingIRQ(PORTB_IRQn);
     NVIC_EnableIRQ(PORTB_IRQn);
 
-    queueForPIT = xQueueCreate(5, sizeof(uint16_t));
+    queueForPIT = xQueueCreate(1, sizeof(uint16_t));
 
     PRINTF(RED_TEXT"Embsys Project\n\r"RESET_TEXT);
 
-//    if(xTaskCreate(ledTask, "LED task", configMINIMAL_STACK_SIZE + 20, NULL, 2, &ledTaskHandle) == pdFAIL)
-//    {
-//    	PRINTF(RED_TEXT"\n\r\t***** LED task creation failed *****\n\r"RESET_TEXT);
-//    }
-
-    if(xTaskCreate(encoderRead, "Encoder task", configMINIMAL_STACK_SIZE + 20, NULL, 2, &encoderTaskHandle) == pdFAIL)
+    if(xTaskCreate(startupTask, "Startup task", configMINIMAL_STACK_SIZE + 20, NULL, 2, &startupTaskHandle) == pdFAIL)
     {
-    	PRINTF(RED_TEXT"\n\r\t***** ENCODER task creation failed *****\n\r"RESET_TEXT);
+    	PRINTF(RED_TEXT"\n\r\t***** Startup task creation failed *****\n\r"RESET_TEXT);
     }
 
     sw2Semaphore = xSemaphoreCreateBinary();
     sw3Semaphore = xSemaphoreCreateBinary();
     encoderSemaphore = xSemaphoreCreateBinary();
+    startEncoderTaskSemaphore = xSemaphoreCreateBinary();
 
     vTaskStartScheduler();
 
