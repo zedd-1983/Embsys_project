@@ -86,8 +86,8 @@
 								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.1203490125" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.637704575" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../board"/>
-									<listOptionValue builtIn="false" value="/home/zedd/Embsys_project/Embsys_project_2/myTasks"/>
 									<listOptionValue builtIn="false" value="../source"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/myTasks}&quot;"/>
 									<listOptionValue builtIn="false" value="../"/>
 									<listOptionValue builtIn="false" value="../amazon-freertos/freertos/portable"/>
 									<listOptionValue builtIn="false" value="../amazon-freertos/include"/>

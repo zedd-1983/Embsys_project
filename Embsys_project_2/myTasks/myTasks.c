@@ -14,6 +14,7 @@
 #include "myDefines.h"
 
 SemaphoreHandle_t sw2Semaphore = NULL, sw3Semaphore = NULL, encoderSemaphore = NULL;
+extern QueueHandle_t queueForPIT;
 
 void ledTask(void* pvParameters)
 {
@@ -78,10 +79,14 @@ void encoderRead(void* pvParameters)
 		// notification)
 		if(xSemaphoreTake(encoderSemaphore, 0) == pdPASS)
 		{
+
 			uint16_t finalValue = count;
 			PRINTF("\n\rFinal value for timer: %d\n\r", finalValue);
+			xQueueSend(queueForPIT, &finalValue, (TickType_t)10);
 
-			// send value to PIT (PIT will send value to DisplayTask)
+			// send value to PIT (PIT will send value to led task)
+//			if(xQueueSend(queueForPIT, &finalValue, (TickType_t)10) != pdPASS)
+//				PRINTF(RED_TEXT"\rFailed to send data to PIT\n\r"RESET_TEXT);
 
 			// delete task as it is no longer needed
 			//vTaskDelete(NULL);

@@ -26,6 +26,8 @@
 // my variables
 TaskHandle_t ledTaskHandle = NULL;
 TaskHandle_t encoderTaskHandle = NULL;
+QueueHandle_t queueForPIT = NULL;
+
 extern SemaphoreHandle_t sw2Semaphore, sw3Semaphore, encoderSemaphore;
 
 void PORTC_IRQHandler()
@@ -45,6 +47,7 @@ void PORTB_IRQHandler()
 
 	xHigherPriorityTaskWoken = pdFALSE;
 	xSemaphoreGiveFromISR(encoderSemaphore, &xHigherPriorityTaskWoken);
+	//xSemaphoreGiveFromISR(encoderToPITSemaphore, &xHigherPriorityTaskWoken);
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
@@ -55,6 +58,33 @@ void PORTA_IRQHandler()
 
 	xHigherPriorityTaskWoken = pdFALSE;
 	xSemaphoreGiveFromISR(sw3Semaphore, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void PIT0_IRQHandler()
+{
+	static uint8_t secondsCount = 0;
+	static bool startCounting = false;
+	static uint16_t receivedInterval = 1;
+	BaseType_t xHigherPriorityTaskWoken;
+	PIT_ClearStatusFlags(PIT, kPIT_Chnl_0, kPIT_TimerFlag);
+
+	xHigherPriorityTaskWoken = pdFALSE;
+	if(xQueueReceiveFromISR(queueForPIT, &receivedInterval, &xHigherPriorityTaskWoken) == pdTRUE) {
+		PRINTF(GREEN_TEXT"\n\rReceived: %d\n\r"RESET_TEXT, receivedInterval);
+		startCounting = true;
+	}
+
+	if(startCounting == true) {
+		secondsCount++;
+		if(secondsCount == (receivedInterval / 6)) {
+			startCounting = false;
+			secondsCount = 0;
+			receivedInterval = 1;
+			PRINTF(RED_TEXT"\n\r*********** Alarm ************\n\r"RESET_TEXT);
+		}
+	}
+
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
@@ -79,6 +109,8 @@ int main(void) {
     NVIC_SetPriority(PORTB_IRQn, 7);
     NVIC_ClearPendingIRQ(PORTB_IRQn);
     NVIC_EnableIRQ(PORTB_IRQn);
+
+    queueForPIT = xQueueCreate(5, sizeof(uint16_t));
 
     PRINTF(RED_TEXT"Embsys Project\n\r"RESET_TEXT);
 
