@@ -132,6 +132,7 @@ pin_labels:
 void BOARD_InitBootPins(void)
 {
     BOARD_InitPins();
+    BOARD_InitButtonsPins();
     BOARD_InitLEDsPins();
     BOARD_InitDEBUG_UARTPins();
 }
@@ -243,13 +244,13 @@ void BOARD_InitPins(void)
 /*
  * TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
 BOARD_InitButtonsPins:
-- options: {prefix: BOARD_, coreID: core0, enableClock: 'true'}
+- options: {callFromInitBoot: 'true', prefix: BOARD_, coreID: core0, enableClock: 'true'}
 - pin_list:
   - {pin_num: '78', peripheral: GPIOC, signal: 'GPIO, 6', pin_signal: CMP0_IN0/PTC6/LLWU_P10/SPI0_SOUT/PDB0_EXTRG/I2S0_RX_BCLK/FB_AD9/I2S0_MCLK, identifier: SW2,
     direction: INPUT, gpio_interrupt: kPORT_InterruptFallingEdge, slew_rate: fast, open_drain: disable, drive_strength: low, pull_select: up, pull_enable: enable,
     passive_filter: disable}
   - {pin_num: '38', peripheral: GPIOA, signal: 'GPIO, 4', pin_signal: PTA4/LLWU_P3/FTM0_CH1/NMI_b/EZP_CS_b, direction: INPUT, gpio_interrupt: kPORT_InterruptFallingEdge,
-    slew_rate: fast, open_drain: disable, drive_strength: low, pull_select: down, pull_enable: disable, passive_filter: disable}
+    slew_rate: fast, open_drain: disable, drive_strength: low, pull_select: up, pull_enable: enable, passive_filter: disable}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 /* clang-format on */
@@ -281,8 +282,8 @@ void BOARD_InitButtonsPins(void)
     /* Initialize GPIO functionality on pin PTC6 (pin 78)  */
     GPIO_PinInit(BOARD_SW2_GPIO, BOARD_SW2_PIN, &SW2_config);
 
-    const port_pin_config_t SW3 = {/* Internal pull-up/down resistor is disabled */
-                                   kPORT_PullDisable,
+    const port_pin_config_t SW3 = {/* Internal pull-up resistor is enabled */
+                                   kPORT_PullUp,
                                    /* Fast slew rate is configured */
                                    kPORT_FastSlewRate,
                                    /* Passive filter is disabled */

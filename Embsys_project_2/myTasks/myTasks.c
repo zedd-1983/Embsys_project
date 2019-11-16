@@ -17,14 +17,14 @@
 #include "helperFunctions.h"
 
 TaskHandle_t 			encoderTaskHandle = NULL;
+TaskHandle_t			timeConfigTaskHandle = NULL;
 extern TaskHandle_t 	ledTaskHandle;
 SemaphoreHandle_t 		sw2Semaphore = NULL, sw3Semaphore = NULL,
 						startEncoderTaskSemaphore = NULL, encoderSemaphore = NULL;
 extern TaskHandle_t 	startupTaskHandle;
 extern QueueHandle_t 	queueForPIT;
-extern uint32_t ledToOn;
-extern rtc_datetime_t RTC_1_dateTimeStruct;
-
+extern uint32_t 		ledToOn;
+extern rtc_datetime_t 	RTC_1_dateTimeStruct;
 
 
 void startupTask(void* pvParameters)
@@ -34,8 +34,6 @@ void startupTask(void* pvParameters)
 #endif
 	for(;;)
 	{
-//TODO: run RTC
-//
 		RTC_GetDatetime(RTC, &RTC_1_dateTimeStruct);
 
 		PRINTF("\r%04d:%02d:%02d:%02d:%02d:%02d\r",
@@ -60,6 +58,14 @@ void startupTask(void* pvParameters)
 			if(xTaskCreate(ledTask, "LED task", configMINIMAL_STACK_SIZE + 20, NULL, 3, &ledTaskHandle) == pdFAIL)
 			{
 				PRINTF(RED_TEXT"\n\r\t***** LED task creation failed *****\n\r"RESET_TEXT);
+			}
+		}
+
+		if(xSemaphoreTake(sw2Semaphore, 0) == pdTRUE) {
+			// create timeConfig task
+			if(xTaskCreate(timeConfig, "Time configuration task", configMINIMAL_STACK_SIZE + 100, NULL, 3, &timeConfigTaskHandle) == pdFAIL)
+			{
+				PRINTF(RED_TEXT"\n\r\t***** TimeConfig task creation failed *****\n\r"RESET_TEXT);
 			}
 		}
 		vTaskDelay(pdMS_TO_TICKS(1000));
@@ -98,6 +104,7 @@ void encoderRead(void* pvParameters)
 	uint16_t currentState;
 	uint8_t mins, secs;
 	const uint8_t diff = 5;
+	NVIC_DisableIRQ(BOARD_SW2_IRQ);
 
 	PRINTF(GREEN_TEXT"\n\rPlease adjust the time interval as required\n\r"RESET_TEXT);
 	// initial read of the encoder
@@ -149,9 +156,65 @@ void encoderRead(void* pvParameters)
 #ifdef SHOW_MESSAGES
 			PRINTF("\n\rDeleting Encoder Task\n\r");
 #endif
+			NVIC_EnableIRQ(BOARD_SW2_IRQ);
 			vTaskDelete(NULL);
 		}
 	}
 }
 
+void timeConfig(void* pvParameters)
+{
+#ifdef SHOW_MESSAGES
+	PRINTF("\n\rTime config\n\r");
+#endif
+
+	char stringDate[10] = "";
+	char stringTime[5] = "";
+
+	for(;;)
+	{
+		// disable ENC_BUTTON interrupt
+		NVIC_DisableIRQ(PORTB_IRQn);
+		//portENTER_CRITICAL();
+		// configure time
+		RTC_StopTimer(RTC);
+
+		// get the new time
+		PRINTF("\n\rEnter new date in format YYYY-MM-DD: ");
+		SCANF("%s", stringDate);
+		PRINTF("\n\rEnter new time in format HH-MM: ");
+		SCANF("%s", stringTime);
+
+		uint16_t newYear = ((stringDate[0] - 48) * 1000) +
+				((stringDate[1] - 48) * 100) +
+				((stringDate[2] - 48) * 10) +
+				((stringDate[3] - 48));
+		uint8_t newMonth = ((stringDate[5] - 48) * 10) + ((stringDate[6] - 48));
+		uint8_t newDay = ((stringDate[8] - 48) * 10) + ((stringDate[9] - 48));
+
+		uint8_t newHour = ((stringTime[0] - 48) * 10) + ((stringTime[1] - 48));
+		uint8_t newMinute = ((stringTime[3] - 48) * 10) + ((stringTime[4] - 48));
+
+		RTC_1_dateTimeStruct.year = newYear;
+		RTC_1_dateTimeStruct.month = newMonth;
+		RTC_1_dateTimeStruct.day = newDay;
+		RTC_1_dateTimeStruct.hour = newHour;
+		RTC_1_dateTimeStruct.minute = newMinute;
+
+		RTC_SetDatetime(RTC, &RTC_1_dateTimeStruct);
+#ifdef SHOW_MESSAGES
+		PRINTF("\n\rYear: %d", RTC_1_dateTimeStruct.year);
+		PRINTF("\n\rMonth: %d", RTC_1_dateTimeStruct.month);
+		PRINTF("\n\rDay: %d", RTC_1_dateTimeStruct.day);
+		PRINTF("\n\rHour: %d", RTC_1_dateTimeStruct.hour);
+		PRINTF("\n\rMinute: %d", RTC_1_dateTimeStruct.minute);
+#endif
+		RTC_StartTimer(RTC);
+		// enable ENC_BUTTON interrupt
+		NVIC_EnableIRQ(PORTB_IRQn);
+		//portEXIT_CRITICAL();
+		// delete itself
+		vTaskDelete(NULL);
+	}
+}
 

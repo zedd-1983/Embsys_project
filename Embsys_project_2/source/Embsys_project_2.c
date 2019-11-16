@@ -142,8 +142,9 @@ int main(void) {
 
     queueForPIT = xQueueCreate(1, sizeof(uint16_t));
 
-    PRINTF(GREEN_TEXT"FreeRTOS Project\n\r"RED_TEXT"Toothbrushing Application\n\r"RESET_TEXT);
+    PRINTF(GREEN_TEXT"FreeRTOS Project\n\r"RED_TEXT"Toothbrushing Application\n\n\r"RESET_TEXT);
     PRINTF("\nPress encoder button to select the interval,\n\rpress again to confirm\n\r");
+    PRINTF("\nPress SW2 to configure time and date of the system\n\r");
 
     if(xTaskCreate(startupTask, "Startup task", configMINIMAL_STACK_SIZE + 20, NULL, 2, &startupTaskHandle) == pdFAIL)
     {
