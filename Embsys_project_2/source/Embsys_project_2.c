@@ -29,6 +29,8 @@ QueueHandle_t queueForPIT = NULL;
 
 extern SemaphoreHandle_t sw2Semaphore, sw3Semaphore, encoderSemaphore, startEncoderTaskSemaphore;
 
+uint32_t ledToOn = 0;
+
 void PORTC_IRQHandler()
 {
 	BaseType_t xHigherPriorityTaskWoken;
@@ -73,6 +75,7 @@ void PIT0_IRQHandler()
 	static uint8_t secondsCount = 0;
 	static bool startCounting = false;
 	static uint16_t receivedInterval = 1;
+	static uint8_t loopCount = 0;
 	BaseType_t xHigherPriorityTaskWoken;
 	PIT_ClearStatusFlags(PIT, kPIT_Chnl_0, kPIT_TimerFlag);
 
@@ -81,16 +84,25 @@ void PIT0_IRQHandler()
 #ifdef SHOW_MESSAGES
 		PRINTF(GREEN_TEXT"\n\rReceived: %d\n\r"RESET_TEXT, receivedInterval);
 #endif
+		xTaskNotifyFromISR(ledTaskHandle, ++ledToOn, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
 		startCounting = true;
 	}
 
 	if(startCounting == true) {
 		secondsCount++;
-		if(secondsCount == (receivedInterval / 6)) {	// if timer expires
-			startCounting = false;
+		if(secondsCount == (receivedInterval / 6)) {	// if timer expires in 1/6th
 			secondsCount = 0;
-			receivedInterval = 1;
+			// notify LED task to switch appropriate LED on
+			xTaskNotifyFromISR(ledTaskHandle, ++ledToOn, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
 			PRINTF(RED_TEXT"\n\r*********** Alarm ************\n\r"RESET_TEXT);
+			if(++loopCount == 6) {	// keep looping until 6th iteration, then stop the alarms
+				PRINTF("\n\rFinished NOW\n\r");
+				startCounting = false;
+				secondsCount = 0;
+				receivedInterval = 1;
+				loopCount = 0;
+				ledToOn = 0;
+			}
 		}
 //		else if ((secondsCount < receivedInterval) &&	// if timer gets interrupted by another press
 //				(uxQueueMessagesWaiting(queueForPIT) > 0)) {
@@ -127,7 +139,8 @@ int main(void) {
 
     queueForPIT = xQueueCreate(1, sizeof(uint16_t));
 
-    PRINTF(RED_TEXT"Embsys Project\n\r"RESET_TEXT);
+    PRINTF(GREEN_TEXT"FreeRTOS Project\n\r"RED_TEXT"Toothbrushing Application\n\r"RESET_TEXT);
+    PRINTF("\nPress encoder button to select the interval,\n\rpress again to confirm\n\r");
 
     if(xTaskCreate(startupTask, "Startup task", configMINIMAL_STACK_SIZE + 20, NULL, 2, &startupTaskHandle) == pdFAIL)
     {
