@@ -768,7 +768,32 @@
                         <data>INPUT</data>
                      </feature>
                   </dependency>
+                  <dependency resourceType="PinSignal" resourceId="RTC.EXTAL32" description="&apos;EXTAL32&apos; (Pins tool id: RTC.EXTAL32, Clocks tool id: RTC.EXTAL32) needs to be routed" problem_level="1" source="Clocks:BOARD_BootClockRUN">
+                     <feature name="routed" evaluation="">
+                        <data>true</data>
+                     </feature>
+                  </dependency>
+                  <dependency resourceType="PinSignal" resourceId="RTC.EXTAL32" description="&apos;EXTAL32&apos; (Pins tool id: RTC.EXTAL32, Clocks tool id: RTC.EXTAL32) needs to have &apos;INPUT&apos; direction" problem_level="1" source="Clocks:BOARD_BootClockRUN">
+                     <feature name="direction" evaluation="">
+                        <data>INPUT</data>
+                     </feature>
+                  </dependency>
+                  <dependency resourceType="PinSignal" resourceId="RTC.XTAL32" description="&apos;XTAL32&apos; (Pins tool id: RTC.XTAL32, Clocks tool id: RTC.XTAL32) needs to be routed" problem_level="1" source="Clocks:BOARD_BootClockRUN">
+                     <feature name="routed" evaluation="">
+                        <data>true</data>
+                     </feature>
+                  </dependency>
+                  <dependency resourceType="PinSignal" resourceId="RTC.XTAL32" description="&apos;XTAL32&apos; (Pins tool id: RTC.XTAL32, Clocks tool id: RTC.XTAL32) needs to have &apos;OUTPUT&apos; direction" problem_level="1" source="Clocks:BOARD_BootClockRUN">
+                     <feature name="direction" evaluation="">
+                        <data>OUTPUT</data>
+                     </feature>
+                  </dependency>
                   <dependency resourceType="SWComponent" resourceId="platform.drivers.common" description="Clocks initialization requires the COMMON Driver in the project." problem_level="2" source="Clocks:BOARD_BootClockRUN">
+                     <feature name="enabled" evaluation="equal" configuration="core0">
+                        <data>true</data>
+                     </feature>
+                  </dependency>
+                  <dependency resourceType="SWComponent" resourceId="platform.drivers.rtc" description="Clocks initialization requires the RTC Driver in the project." problem_level="2" source="Clocks:BOARD_BootClockRUN">
                      <feature name="enabled" evaluation="equal" configuration="core0">
                         <data>true</data>
                      </feature>
@@ -776,12 +801,14 @@
                </dependencies>
                <clock_sources>
                   <clock_source id="OSC.OSC.outFreq" value="50 MHz" locked="false" enabled="true"/>
+                  <clock_source id="RTC.RTC32kHz.outFreq" value="32.768 kHz" locked="false" enabled="true"/>
                </clock_sources>
                <clock_outputs>
                   <clock_output id="Bus_clock.outFreq" value="60 MHz" locked="false" accuracy=""/>
                   <clock_output id="CLKOUT.outFreq" value="40 MHz" locked="false" accuracy=""/>
                   <clock_output id="Core_clock.outFreq" value="120 MHz" locked="true" accuracy="0.001"/>
                   <clock_output id="ENET1588TSCLK.outFreq" value="50 MHz" locked="false" accuracy=""/>
+                  <clock_output id="ERCLK32K.outFreq" value="32.768 kHz" locked="false" accuracy=""/>
                   <clock_output id="Flash_clock.outFreq" value="24 MHz" locked="false" accuracy=""/>
                   <clock_output id="FlexBus_clock.outFreq" value="40 MHz" locked="false" accuracy=""/>
                   <clock_output id="LPO_clock.outFreq" value="1 kHz" locked="false" accuracy=""/>
@@ -790,6 +817,7 @@
                   <clock_output id="OSCERCLK.outFreq" value="50 MHz" locked="false" accuracy=""/>
                   <clock_output id="PLLFLLCLK.outFreq" value="120 MHz" locked="false" accuracy=""/>
                   <clock_output id="RMIICLK.outFreq" value="50 MHz" locked="false" accuracy=""/>
+                  <clock_output id="RTC_CLKOUT.outFreq" value="32.768 kHz" locked="false" accuracy=""/>
                   <clock_output id="SDHCCLK.outFreq" value="50 MHz" locked="false" accuracy=""/>
                   <clock_output id="System_clock.outFreq" value="120 MHz" locked="false" accuracy=""/>
                   <clock_output id="TRACECLKIN.outFreq" value="120 MHz" locked="false" accuracy=""/>
@@ -896,6 +924,16 @@
                   <data type="Version">2.0.0</data>
                </feature>
             </dependency>
+            <dependency resourceType="SWComponent" resourceId="platform.drivers.rtc" description="RTC Driver not found in the toolchain/IDE project." problem_level="2" source="Peripherals">
+               <feature name="enabled" evaluation="equal">
+                  <data type="Boolean">true</data>
+               </feature>
+            </dependency>
+            <dependency resourceType="SWComponent" resourceId="platform.drivers.rtc" description="Unsupported version of the RTC Driver in the toolchain/IDE project. Required: ${required_value}, actual: ${actual_value}." problem_level="1" source="Peripherals">
+               <feature name="version" evaluation="equivalent">
+                  <data type="Version">2.2.0</data>
+               </feature>
+            </dependency>
          </dependencies>
          <generated_project_files>
             <file path="board/boards/peripherals.c" update_enabled="true"/>
@@ -938,6 +976,47 @@
                               </struct>
                            </struct>
                         </array>
+                     </config_set>
+                  </instance>
+                  <instance name="RTC_1" type="rtc" type_id="rtc_603f70732a5387a85b5715615cba9e65" mode="general" peripheral="RTC" enabled="true">
+                     <config_set name="fsl_rtc">
+                        <struct name="clockConfig_t"/>
+                        <struct name="rtc_config">
+                           <setting name="updateMode" value="false"/>
+                           <setting name="supervisorAccess" value="false"/>
+                           <setting name="compensationIntervalInt" value="1"/>
+                           <setting name="compensationTimeInt" value="0"/>
+                           <setting name="setDateTime" value="true"/>
+                           <struct name="rtc_datetime">
+                              <setting name="year" value="2019"/>
+                              <setting name="month" value="11"/>
+                              <setting name="day" value="16"/>
+                              <setting name="hour" value="17"/>
+                              <setting name="minute" value="25"/>
+                              <setting name="second" value="0"/>
+                           </struct>
+                           <setting name="setAlarm" value="false"/>
+                           <setting name="start" value="true"/>
+                        </struct>
+                        <struct name="interruptsCfg">
+                           <set name="interruptSources">
+                              <selected/>
+                           </set>
+                           <setting name="isSecondsInterruptEnabled" value="false"/>
+                           <struct name="secondsInterrupt">
+                              <setting name="IRQn" value="RTC_Seconds_IRQn"/>
+                              <setting name="enable_priority" value="false"/>
+                              <setting name="priority" value="1"/>
+                              <setting name="enable_custom_name" value="false"/>
+                           </struct>
+                           <setting name="isInterruptEnabled" value="false"/>
+                           <struct name="commonInterrupt">
+                              <setting name="IRQn" value="RTC_IRQn"/>
+                              <setting name="enable_priority" value="false"/>
+                              <setting name="priority" value="0"/>
+                              <setting name="enable_custom_name" value="false"/>
+                           </struct>
+                        </struct>
                      </config_set>
                   </instance>
                </instances>

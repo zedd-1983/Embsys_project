@@ -11,6 +11,7 @@
 #include "clock_config.h"
 #include "MK64F12.h"
 #include "fsl_debug_console.h"
+#include "fsl_rtc.h"
 
 // FreeRTOS
 #include "FreeRTOS.h"
@@ -94,7 +95,9 @@ void PIT0_IRQHandler()
 			secondsCount = 0;
 			// notify LED task to switch appropriate LED on
 			xTaskNotifyFromISR(ledTaskHandle, ++ledToOn, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+#ifdef SHOW_MESSAGES
 			PRINTF(RED_TEXT"\n\r*********** Alarm ************\n\r"RESET_TEXT);
+#endif
 			if(++loopCount == 6) {	// keep looping until 6th iteration, then stop the alarms
 				PRINTF("\n\rFinished NOW\n\r");
 				startCounting = false;

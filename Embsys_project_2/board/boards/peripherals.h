@@ -11,6 +11,7 @@
  **********************************************************************************************************************/
 #include "fsl_common.h"
 #include "fsl_pit.h"
+#include "fsl_rtc.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -35,11 +36,16 @@ extern "C" {
 #define PIT_1_0_IRQ_PRIORITY 10
 /* PIT_1 interrupt handler identifier. */
 #define PIT_1_0_IRQHANDLER PIT0_IRQHandler
+/* Definition of peripheral ID */
+#define RTC_1_PERIPHERAL RTC
 
 /***********************************************************************************************************************
  * Global variables
  **********************************************************************************************************************/
 extern const pit_config_t PIT_1_config;
+extern const rtc_config_t RTC_1_config;
+/* Date and time structure */
+extern rtc_datetime_t RTC_1_dateTimeStruct;
 
 /***********************************************************************************************************************
  * Initialization functions

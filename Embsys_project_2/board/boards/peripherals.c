@@ -93,12 +93,86 @@ void PIT_1_init(void) {
 }
 
 /***********************************************************************************************************************
+ * RTC_1 initialization code
+ **********************************************************************************************************************/
+/* clang-format off */
+/* TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
+instance:
+- name: 'RTC_1'
+- type: 'rtc'
+- mode: 'general'
+- type_id: 'rtc_603f70732a5387a85b5715615cba9e65'
+- functional_group: 'BOARD_InitPeripherals'
+- peripheral: 'RTC'
+- config_sets:
+  - fsl_rtc:
+    - clockConfig_t: []
+    - rtc_config:
+      - updateMode: 'false'
+      - supervisorAccess: 'false'
+      - compensationIntervalInt: '1'
+      - compensationTimeInt: '0'
+      - setDateTime: 'true'
+      - rtc_datetime:
+        - year: '2019'
+        - month: '11'
+        - day: '16'
+        - hour: '17'
+        - minute: '25'
+        - second: '0'
+      - setAlarm: 'false'
+      - start: 'true'
+    - interruptsCfg:
+      - interruptSources: ''
+      - isSecondsInterruptEnabled: 'false'
+      - secondsInterrupt:
+        - IRQn: 'RTC_Seconds_IRQn'
+        - enable_priority: 'false'
+        - priority: '1'
+        - enable_custom_name: 'false'
+      - isInterruptEnabled: 'false'
+      - commonInterrupt:
+        - IRQn: 'RTC_IRQn'
+        - enable_priority: 'false'
+        - priority: '0'
+        - enable_custom_name: 'false'
+ * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
+/* clang-format on */
+const rtc_config_t RTC_1_config = {
+  .wakeupSelect = false,
+  .updateMode = false,
+  .supervisorAccess = false,
+  .compensationInterval = 0x0U,
+  .compensationTime = 0x0U
+};
+rtc_datetime_t RTC_1_dateTimeStruct = {
+  .year = 2019,
+  .month = 11,
+  .day = 16,
+  .hour = 17,
+  .minute = 25,
+  .second = 0
+};
+
+void RTC_1_init(void) {
+  /* RTC initialization */
+  RTC_Init(RTC_1_PERIPHERAL, &RTC_1_config);
+  /* Stop RTC timer */
+  RTC_StopTimer(RTC_1_PERIPHERAL);
+  /* Date and time initialization */
+  RTC_SetDatetime(RTC_1_PERIPHERAL, &RTC_1_dateTimeStruct);
+  /* Start RTC timer */
+  RTC_StartTimer(RTC_1_PERIPHERAL);
+}
+
+/***********************************************************************************************************************
  * Initialization functions
  **********************************************************************************************************************/
 void BOARD_InitPeripherals(void)
 {
   /* Initialize components */
   PIT_1_init();
+  RTC_1_init();
 }
 
 /***********************************************************************************************************************

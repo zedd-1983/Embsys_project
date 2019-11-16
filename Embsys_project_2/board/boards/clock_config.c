@@ -43,6 +43,7 @@ board: FRDM-K64F
 /* clang-format on */
 
 #include "fsl_smc.h"
+#include "fsl_rtc.h"
 #include "clock_config.h"
 
 /*******************************************************************************
@@ -52,12 +53,15 @@ board: FRDM-K64F
 #define MCG_PLL_DISABLE                                   0U  /*!< MCGPLLCLK disabled */
 #define OSC_CAP0P                                         0U  /*!< Oscillator 0pF capacitor load */
 #define OSC_ER_CLK_DISABLE                                0U  /*!< Disable external reference clock */
+#define RTC_OSC_CAP_LOAD_10PF                        0x2800U  /*!< RTC oscillator capacity load: 10pF */
+#define RTC_RTC32KCLK_PERIPHERALS_ENABLED                 1U  /*!< RTC32KCLK to other peripherals: enabled */
 #define SIM_CLKOUT_SEL_FLEXBUS_CLK                        0U  /*!< CLKOUT pin clock select: FlexBus clock */
 #define SIM_ENET_1588T_CLK_SEL_OSCERCLK_CLK               2U  /*!< SDHC clock select: OSCERCLK clock */
 #define SIM_ENET_RMII_CLK_SEL_EXTAL_CLK                   0U  /*!< SDHC clock select: Core/system clock */
 #define SIM_OSC32KSEL_RTC32KCLK_CLK                       2U  /*!< OSC32KSEL select: RTC32KCLK clock (32.768kHz) */
 #define SIM_PLLFLLSEL_IRC48MCLK_CLK                       3U  /*!< PLLFLL select: IRC48MCLK clock */
 #define SIM_PLLFLLSEL_MCGPLLCLK_CLK                       1U  /*!< PLLFLL select: MCGPLLCLK clock */
+#define SIM_RTC_CLKOUT_SEL_RTC32KCLK_CLK                  1U  /*!< RTC clock output select: RTC32KCLK clock (32.768kHz) */
 #define SIM_SDHC_CLK_SEL_OSCERCLK_CLK                     2U  /*!< SDHC clock select: OSCERCLK clock */
 #define SIM_TRACE_CLK_SEL_CORE_SYSTEM_CLK                 1U  /*!< Trace clock select: Core/system clock */
 #define SIM_USB_CLK_120000000HZ                   120000000U  /*!< Input SIM frequency for USB: 120000000Hz */
@@ -71,6 +75,42 @@ extern uint32_t SystemCoreClock;
 /*******************************************************************************
  * Code
  ******************************************************************************/
+/*FUNCTION**********************************************************************
+ *
+ * Function Name : CLOCK_CONFIG_SetRtcClock
+ * Description   : This function is used to configuring RTC clock including 
+ * enabling RTC oscillator.
+ * Param capLoad : RTC oscillator capacity load
+ * Param enableOutPeriph : Enable (1U)/Disable (0U) clock to peripherals
+ *
+ *END**************************************************************************/
+static void CLOCK_CONFIG_SetRtcClock(uint32_t capLoad, uint8_t enableOutPeriph)
+{
+  /* RTC clock gate enable */
+  CLOCK_EnableClock(kCLOCK_Rtc0);
+  if ((RTC->CR & RTC_CR_OSCE_MASK) == 0u) { /* Only if the Rtc oscillator is not already enabled */
+    /* Set the specified capacitor configuration for the RTC oscillator */
+    RTC_SetOscCapLoad(RTC, capLoad);
+    /* Enable the RTC 32KHz oscillator */
+    RTC->CR |= RTC_CR_OSCE_MASK;
+  }
+  /* Output to other peripherals */
+  if (enableOutPeriph) {
+    RTC->CR &= ~RTC_CR_CLKO_MASK;
+  }
+  else {
+    RTC->CR |= RTC_CR_CLKO_MASK;
+  }
+  /* Set the XTAL32/RTC_CLKIN frequency based on board setting. */
+  CLOCK_SetXtal32Freq(BOARD_XTAL32K_CLK_HZ);
+  /* Set RTC_TSR if there is fault value in RTC */
+  if (RTC->SR & RTC_SR_TIF_MASK) {
+    RTC -> TSR = RTC -> TSR;
+  }
+  /* RTC clock gate disable */
+  CLOCK_DisableClock(kCLOCK_Rtc0);
+}
+
 /*FUNCTION**********************************************************************
  *
  * Function Name : CLOCK_CONFIG_SetFllExtRefDiv
@@ -104,6 +144,7 @@ outputs:
 - {id: CLKOUT.outFreq, value: 40 MHz}
 - {id: Core_clock.outFreq, value: 120 MHz, locked: true, accuracy: '0.001'}
 - {id: ENET1588TSCLK.outFreq, value: 50 MHz}
+- {id: ERCLK32K.outFreq, value: 32.768 kHz}
 - {id: Flash_clock.outFreq, value: 24 MHz}
 - {id: FlexBus_clock.outFreq, value: 40 MHz}
 - {id: LPO_clock.outFreq, value: 1 kHz}
@@ -112,6 +153,7 @@ outputs:
 - {id: OSCERCLK.outFreq, value: 50 MHz}
 - {id: PLLFLLCLK.outFreq, value: 120 MHz}
 - {id: RMIICLK.outFreq, value: 50 MHz}
+- {id: RTC_CLKOUT.outFreq, value: 32.768 kHz}
 - {id: SDHCCLK.outFreq, value: 50 MHz}
 - {id: System_clock.outFreq, value: 120 MHz}
 - {id: TRACECLKIN.outFreq, value: 120 MHz}
@@ -150,6 +192,7 @@ settings:
 - {id: USBClkConfig, value: 'yes'}
 sources:
 - {id: OSC.OSC.outFreq, value: 50 MHz, enabled: true}
+- {id: RTC.RTC32kHz.outFreq, value: 32.768 kHz, enabled: true}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
 /* clang-format on */
 
@@ -197,6 +240,8 @@ void BOARD_BootClockRUN(void)
 {
     /* Set the system clock dividers in SIM to safe value. */
     CLOCK_SetSimSafeDivs();
+    /* Configure RTC clock including enabling RTC oscillator. */
+    CLOCK_CONFIG_SetRtcClock(RTC_OSC_CAP_LOAD_10PF, RTC_RTC32KCLK_PERIPHERALS_ENABLED);
     /* Initializes OSC0 according to board configuration. */
     CLOCK_InitOsc0(&oscConfig_BOARD_BootClockRUN);
     CLOCK_SetXtal0Freq(oscConfig_BOARD_BootClockRUN.freq);
@@ -214,6 +259,8 @@ void BOARD_BootClockRUN(void)
     CLOCK_SetSimConfig(&simConfig_BOARD_BootClockRUN);
     /* Set SystemCoreClock variable. */
     SystemCoreClock = BOARD_BOOTCLOCKRUN_CORE_CLOCK;
+    /* Set RTC_CLKOUT source. */
+    CLOCK_SetRtcClkOutClock(SIM_RTC_CLKOUT_SEL_RTC32KCLK_CLK);
     /* Enable USB FS clock. */
     CLOCK_EnableUsbfs0Clock(kCLOCK_UsbSrcPll0, SIM_USB_CLK_120000000HZ);
     /* Set enet timestamp clock source. */

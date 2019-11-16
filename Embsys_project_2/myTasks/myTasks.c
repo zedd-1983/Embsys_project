@@ -10,6 +10,7 @@
 
 #include "fsl_debug_console.h"
 #include "pin_mux.h"
+#include "fsl_rtc.h"
 
 #include "myDefines.h"
 #include "myTasks.h"
@@ -22,6 +23,9 @@ SemaphoreHandle_t 		sw2Semaphore = NULL, sw3Semaphore = NULL,
 extern TaskHandle_t 	startupTaskHandle;
 extern QueueHandle_t 	queueForPIT;
 extern uint32_t ledToOn;
+extern rtc_datetime_t RTC_1_dateTimeStruct;
+
+
 
 void startupTask(void* pvParameters)
 {
@@ -32,6 +36,17 @@ void startupTask(void* pvParameters)
 	{
 //TODO: run RTC
 //
+		RTC_GetDatetime(RTC, &RTC_1_dateTimeStruct);
+
+		PRINTF("\r%04d:%02d:%02d:%02d:%02d:%02d\r",
+			RTC_1_dateTimeStruct.year,
+			RTC_1_dateTimeStruct.month,
+			RTC_1_dateTimeStruct.day,
+			RTC_1_dateTimeStruct.hour,
+			RTC_1_dateTimeStruct.minute,
+			RTC_1_dateTimeStruct.second
+			);
+
 		if(xSemaphoreTake(startEncoderTaskSemaphore, 0) == pdTRUE)
 		{
 #ifdef SHOW_MESSAGES
@@ -47,7 +62,7 @@ void startupTask(void* pvParameters)
 				PRINTF(RED_TEXT"\n\r\t***** LED task creation failed *****\n\r"RESET_TEXT);
 			}
 		}
-//TODO: return to startup with RTC continuing
+		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 }
 
