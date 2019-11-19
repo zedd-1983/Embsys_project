@@ -46,6 +46,48 @@ void BOARD_InitBootPins(void);
 #define BOARD_ENC_CLK_PIN 10U    /*!<@brief PORTB pin index: 10 */
                                  /* @} */
 
+/*! @name PORTC5 (number 77), J1[15]
+  @{ */
+#define BOARD_LED1_GPIO GPIOC /*!<@brief GPIO device name: GPIOC */
+#define BOARD_LED1_PORT PORTC /*!<@brief PORT device name: PORTC */
+#define BOARD_LED1_PIN 5U     /*!<@brief PORTC pin index: 5 */
+                              /* @} */
+
+/*! @name PORTC7 (number 79), J1[13]
+  @{ */
+#define BOARD_LED2_GPIO GPIOC /*!<@brief GPIO device name: GPIOC */
+#define BOARD_LED2_PORT PORTC /*!<@brief PORT device name: PORTC */
+#define BOARD_LED2_PIN 7U     /*!<@brief PORTC pin index: 7 */
+                              /* @} */
+
+/*! @name PORTC0 (number 70), J1[11]
+  @{ */
+#define BOARD_LED3_GPIO GPIOC /*!<@brief GPIO device name: GPIOC */
+#define BOARD_LED3_PORT PORTC /*!<@brief PORT device name: PORTC */
+#define BOARD_LED3_PIN 0U     /*!<@brief PORTC pin index: 0 */
+                              /* @} */
+
+/*! @name PORTC9 (number 81), J1[9]
+  @{ */
+#define BOARD_LED4_GPIO GPIOC /*!<@brief GPIO device name: GPIOC */
+#define BOARD_LED4_PORT PORTC /*!<@brief PORT device name: PORTC */
+#define BOARD_LED4_PIN 9U     /*!<@brief PORTC pin index: 9 */
+                              /* @} */
+
+/*! @name PORTC8 (number 80), J1[7]
+  @{ */
+#define BOARD_LED5_GPIO GPIOC /*!<@brief GPIO device name: GPIOC */
+#define BOARD_LED5_PORT PORTC /*!<@brief PORT device name: PORTC */
+#define BOARD_LED5_PIN 8U     /*!<@brief PORTC pin index: 8 */
+                              /* @} */
+
+/*! @name PORTC1 (number 71), J1[5]
+  @{ */
+#define BOARD_LED6_GPIO GPIOC /*!<@brief GPIO device name: GPIOC */
+#define BOARD_LED6_PORT PORTC /*!<@brief PORT device name: PORTC */
+#define BOARD_LED6_PIN 1U     /*!<@brief PORTC pin index: 1 */
+                              /* @} */
+
 /*!
  * @brief Configures pin routing and optionally pin electrical features.
  *

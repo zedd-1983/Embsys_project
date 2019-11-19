@@ -36,7 +36,7 @@ void startupTask(void* pvParameters)
 	{
 		RTC_GetDatetime(RTC, &RTC_1_dateTimeStruct);
 
-		PRINTF("\r%04d:%02d:%02d:%02d:%02d:%02d\r",
+		PRINTF("\r%04d/%02d/%02d\t%02d:%02d:%02d\r",
 			RTC_1_dateTimeStruct.year,
 			RTC_1_dateTimeStruct.month,
 			RTC_1_dateTimeStruct.day,
@@ -81,12 +81,12 @@ void ledTask(void* pvParameters)
 	{
 		if(xTaskNotifyWait(0,0, &ledToOn, 0) == pdTRUE) {
 			switch(ledToOn) {
-				case 1 : allLedsOFF(); LED_RED_ON(); break;
-				case 2 : allLedsOFF(); LED_BLUE_ON(); break;
-				case 3 : allLedsOFF(); LED_GREEN_ON(); break;
-				case 4 : allLedsOFF(); LED_RED_ON(); LED_BLUE_ON(); break;
-				case 5 : allLedsOFF(); LED_BLUE_ON(); LED_GREEN_ON(); break;
-				case 6 : allLedsOFF(); LED_GREEN_ON(); LED_RED_ON(); break;
+				case 1 : allLedsOFF(); GPIO_PinWrite(BOARD_LED1_GPIO, BOARD_LED1_PIN, 1); break;
+				case 2 : allLedsOFF(); GPIO_PinWrite(BOARD_LED2_GPIO, BOARD_LED2_PIN, 1); break;
+				case 3 : allLedsOFF(); GPIO_PinWrite(BOARD_LED3_GPIO, BOARD_LED3_PIN, 1); break;
+				case 4 : allLedsOFF(); GPIO_PinWrite(BOARD_LED4_GPIO, BOARD_LED4_PIN, 1); break;
+				case 5 : allLedsOFF(); GPIO_PinWrite(BOARD_LED5_GPIO, BOARD_LED5_PIN, 1); break;
+				case 6 : allLedsOFF(); GPIO_PinWrite(BOARD_LED6_GPIO, BOARD_LED6_PIN, 1); break;
 				default: allLedsOFF();
 			}
 		}
@@ -184,6 +184,7 @@ void timeConfig(void* pvParameters)
 		SCANF("%s", stringDate);
 		PRINTF("\n\rEnter new time in format HH-MM: ");
 		SCANF("%s", stringTime);
+		PRINTF("\n");
 
 		uint16_t newYear = ((stringDate[0] - 48) * 1000) +
 				((stringDate[1] - 48) * 100) +
@@ -211,6 +212,7 @@ void timeConfig(void* pvParameters)
 #endif
 		RTC_StartTimer(RTC);
 		// enable ENC_BUTTON interrupt
+
 		NVIC_EnableIRQ(PORTB_IRQn);
 		//portEXIT_CRITICAL();
 		// delete itself
