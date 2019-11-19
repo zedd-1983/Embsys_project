@@ -1,8 +1,20 @@
 // board setup
 /*
+ * Encoder:
  * PTB2 	- encoder button 	ENC_BUT
  * PTB3 	- encoder data 		ENC_DT
  * PTB10 	- encoder clock 	ENC_clk
+ *
+ * LEDs:
+ * PTC5 	- top left led		LED1
+ * PTC7		- bottom lef led	LED2
+ * PTC0		- middle top led	LED3
+ * PTC9		- middle bottom led	LED4
+ * PTC8		- top right led		LED5
+ * PTC5		- bottom right led	LED6
+ *
+ * Tap sensor:
+ * PTB19	- tap sensor signal	TAP
  */
 #include <stdio.h>
 #include "board.h"
@@ -28,7 +40,8 @@ TaskHandle_t ledTaskHandle = NULL;
 TaskHandle_t startupTaskHandle = NULL;
 QueueHandle_t queueForPIT = NULL;
 
-extern SemaphoreHandle_t sw2Semaphore, sw3Semaphore, encoderSemaphore, startEncoderTaskSemaphore;
+extern SemaphoreHandle_t 	sw2Semaphore, sw3Semaphore, encoderSemaphore,
+							startEncoderTaskSemaphore, progressSemaphore;
 
 uint32_t ledToOn = 0;
 
@@ -46,17 +59,44 @@ void PORTB_IRQHandler()
 {
 	static uint8_t pressCount = 0;
 	BaseType_t xHigherPriorityTaskWoken;
+	bool encHappened = false;
+	bool tapHappened = false;
 	for(int i = 0; i < 2000000; i++);
-	GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO, 1 << BOARD_ENC_BUTTON_PIN);
+
+	if(GPIO_PortGetInterruptFlags(GPIOB) & BOARD_ENC_BUTTON_PIN)
+		encHappened = true;
+	else if (GPIO_PortGetInterruptFlags(GPIOB) & BOARD_TAP_PIN)
+		tapHappened = true;
+
+	GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO,
+			1 << BOARD_ENC_BUTTON_PIN | 1 << BOARD_TAP_PIN);
 
 	xHigherPriorityTaskWoken = pdFALSE;
 	// if it's a first press, create encoder task and start it
-	if(++pressCount == 1)
-		xSemaphoreGiveFromISR(startEncoderTaskSemaphore, &xHigherPriorityTaskWoken);
-	else	// otherwise it denotes confirmation of interval time
+	if(true == encHappened) {
+#ifdef SHOW_MESSAGES
+		PRINTF("\n\rENC happened\n\r");
+#endif
+		if(++pressCount == 1) {
+			xSemaphoreGiveFromISR(startEncoderTaskSemaphore, &xHigherPriorityTaskWoken);
+			encHappened = false;
+		}
+		else	// otherwise it denotes confirmation of interval time
+		{
+			xSemaphoreGiveFromISR(encoderSemaphore, &xHigherPriorityTaskWoken);
+			pressCount = 0;
+			encHappened = false;
+		}
+	}
+
+	if(true == tapHappened)
 	{
-		xSemaphoreGiveFromISR(encoderSemaphore, &xHigherPriorityTaskWoken);
-		pressCount = 0;
+#ifdef SHOW_MESSAGES
+		PRINTF("\n\rTAP happened\n\r");
+#endif
+		// give semaphore to PIT to progress to next stage
+		xSemaphoreGiveFromISR(progressSemaphore, &xHigherPriorityTaskWoken);
+		tapHappened = false;
 	}
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }

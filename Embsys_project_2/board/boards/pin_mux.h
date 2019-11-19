@@ -88,6 +88,13 @@ void BOARD_InitBootPins(void);
 #define BOARD_LED6_PIN 1U     /*!<@brief PORTC pin index: 1 */
                               /* @} */
 
+/*! @name PORTB19 (number 65), J1[3]
+  @{ */
+#define BOARD_TAP_GPIO GPIOB /*!<@brief GPIO device name: GPIOB */
+#define BOARD_TAP_PORT PORTB /*!<@brief PORT device name: PORTB */
+#define BOARD_TAP_PIN 19U    /*!<@brief PORTB pin index: 19 */
+                             /* @} */
+
 /*!
  * @brief Configures pin routing and optionally pin electrical features.
  *

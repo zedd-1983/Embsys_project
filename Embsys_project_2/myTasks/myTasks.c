@@ -20,7 +20,8 @@ TaskHandle_t 			encoderTaskHandle = NULL;
 TaskHandle_t			timeConfigTaskHandle = NULL;
 extern TaskHandle_t 	ledTaskHandle;
 SemaphoreHandle_t 		sw2Semaphore = NULL, sw3Semaphore = NULL,
-						startEncoderTaskSemaphore = NULL, encoderSemaphore = NULL;
+						startEncoderTaskSemaphore = NULL, encoderSemaphore = NULL,
+						progressSemaphore = NULL;
 extern TaskHandle_t 	startupTaskHandle;
 extern QueueHandle_t 	queueForPIT;
 extern uint32_t 		ledToOn;
@@ -220,10 +221,14 @@ void timeConfig(void* pvParameters)
 	}
 }
 
-void tapSensorTask(void* pvParameters)
-{
-	for(;;)
-	{
-
-	}
-}
+//void tapSensorTask(void* pvParameters)
+//{
+//	for(;;)
+//	{
+//		if(GPIO_PinRead(base, pin)) {
+//			// send semaphore to PIT to progress to next stage
+//			xSemaphoreGive(progressSemaphore);
+//
+//		}
+//	}
+//}

@@ -23,7 +23,7 @@ pin_labels:
 - {pin_num: '72', pin_signal: ADC0_SE4b/CMP1_IN0/PTC2/SPI0_PCS2/UART1_CTS_b/FTM0_CH1/FB_AD12/I2S0_TX_FS, label: 'J1[14]'}
 - {pin_num: '73', pin_signal: CMP1_IN1/PTC3/LLWU_P7/SPI0_PCS1/UART1_RX/FTM0_CH2/CLKOUT/I2S0_TX_BCLK, label: 'J1[16]'}
 - {pin_num: '64', pin_signal: PTB18/CAN0_TX/FTM2_CH0/I2S0_TX_BCLK/FB_AD15/FTM2_QD_PHA, label: 'J1[1]'}
-- {pin_num: '65', pin_signal: PTB19/CAN0_RX/FTM2_CH1/I2S0_TX_FS/FB_OE_b/FTM2_QD_PHB, label: 'J1[3]'}
+- {pin_num: '65', pin_signal: PTB19/CAN0_RX/FTM2_CH1/I2S0_TX_FS/FB_OE_b/FTM2_QD_PHB, label: 'J1[3]', identifier: TAP}
 - {pin_num: '71', pin_signal: ADC0_SE15/PTC1/LLWU_P6/SPI0_PCS3/UART1_RTS_b/FTM0_CH0/FB_AD13/I2S0_TXD0, label: 'J1[5]', identifier: LED6}
 - {pin_num: '80', pin_signal: ADC1_SE4b/CMP0_IN2/PTC8/FTM3_CH4/I2S0_MCLK/FB_AD7, label: 'J1[7]', identifier: LED5}
 - {pin_num: '81', pin_signal: ADC1_SE5b/CMP0_IN3/PTC9/FTM3_CH5/I2S0_RX_BCLK/FB_AD6/FTM2_FLT0, label: 'J1[9]', identifier: LED4}
@@ -156,6 +156,8 @@ BOARD_InitPins:
   - {pin_num: '80', peripheral: GPIOC, signal: 'GPIO, 8', pin_signal: ADC1_SE4b/CMP0_IN2/PTC8/FTM3_CH4/I2S0_MCLK/FB_AD7, direction: OUTPUT, drive_strength: high}
   - {pin_num: '71', peripheral: GPIOC, signal: 'GPIO, 1', pin_signal: ADC0_SE15/PTC1/LLWU_P6/SPI0_PCS3/UART1_RTS_b/FTM0_CH0/FB_AD13/I2S0_TXD0, direction: OUTPUT,
     drive_strength: high}
+  - {pin_num: '65', peripheral: GPIOB, signal: 'GPIO, 19', pin_signal: PTB19/CAN0_RX/FTM2_CH1/I2S0_TX_FS/FB_OE_b/FTM2_QD_PHB, direction: INPUT, gpio_interrupt: kPORT_InterruptFallingEdge,
+    pull_enable: enable}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 /* clang-format on */
@@ -195,6 +197,13 @@ void BOARD_InitPins(void)
     };
     /* Initialize GPIO functionality on pin PTB10 (pin 58)  */
     GPIO_PinInit(BOARD_ENC_CLK_GPIO, BOARD_ENC_CLK_PIN, &ENC_CLK_config);
+
+    gpio_pin_config_t TAP_config = {
+        .pinDirection = kGPIO_DigitalInput,
+        .outputLogic = 0U
+    };
+    /* Initialize GPIO functionality on pin PTB19 (pin 65)  */
+    GPIO_PinInit(BOARD_TAP_GPIO, BOARD_TAP_PIN, &TAP_config);
 
     gpio_pin_config_t LED3_config = {
         .pinDirection = kGPIO_DigitalOutput,
@@ -260,6 +269,19 @@ void BOARD_InitPins(void)
     PORT_SetPinMux(BOARD_ENC_CLK_PORT, BOARD_ENC_CLK_PIN, kPORT_MuxAsGpio);
 
     PORTB->PCR[10] = ((PORTB->PCR[10] &
+                       /* Mask bits to zero which are setting */
+                       (~(PORT_PCR_PE_MASK | PORT_PCR_ISF_MASK)))
+
+                      /* Pull Enable: Internal pullup or pulldown resistor is enabled on the corresponding pin. */
+                      | (uint32_t)(PORT_PCR_PE_MASK));
+
+    /* PORTB19 (pin 65) is configured as PTB19 */
+    PORT_SetPinMux(BOARD_TAP_PORT, BOARD_TAP_PIN, kPORT_MuxAsGpio);
+
+    /* Interrupt configuration on PORTB19 (pin 65): Interrupt on falling edge */
+    PORT_SetPinInterruptConfig(BOARD_TAP_PORT, BOARD_TAP_PIN, kPORT_InterruptFallingEdge);
+
+    PORTB->PCR[19] = ((PORTB->PCR[19] &
                        /* Mask bits to zero which are setting */
                        (~(PORT_PCR_PE_MASK | PORT_PCR_ISF_MASK)))
 
