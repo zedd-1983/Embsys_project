@@ -13,5 +13,6 @@ void startupTask(void* pvParameters);
 void ledTask(void* pvParameters);
 void encoderRead(void* pvParameters);
 void timeConfig(void* pvParameters);
+void tapSensorTask(void* pvParameters);
 
 #endif /* MYTASKS_H_ */

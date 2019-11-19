@@ -220,3 +220,10 @@ void timeConfig(void* pvParameters)
 	}
 }
 
+void tapSensorTask(void* pvParameters)
+{
+	for(;;)
+	{
+
+	}
+}
