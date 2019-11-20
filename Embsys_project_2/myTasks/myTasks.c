@@ -64,7 +64,7 @@ void startupTask(void* pvParameters)
 
 		if(xSemaphoreTake(sw2Semaphore, 0) == pdTRUE) {
 			// create timeConfig task
-			if(xTaskCreate(timeConfig, "Time configuration task", configMINIMAL_STACK_SIZE + 100, NULL, 3, &timeConfigTaskHandle) == pdFAIL)
+			if(xTaskCreate(timeConfig, "Time configuration task", configMINIMAL_STACK_SIZE + 150, NULL, 3, &timeConfigTaskHandle) == pdFAIL)
 			{
 				PRINTF(RED_TEXT"\n\r\t***** TimeConfig task creation failed *****\n\r"RESET_TEXT);
 			}
@@ -171,6 +171,8 @@ void timeConfig(void* pvParameters)
 
 	char stringDate[10] = "";
 	char stringTime[5] = "";
+	uint16_t newYear = 1970;
+	uint8_t newMonth = 1, newDay = 1, newHour = 1, newMinute =1;
 
 	for(;;)
 	{
@@ -181,21 +183,47 @@ void timeConfig(void* pvParameters)
 		RTC_StopTimer(RTC);
 
 		// get the new time
-		PRINTF("\n\rEnter new date in format YYYY-MM-DD: ");
+		PRINTF("\n\rEnter new date [min val 1970-01-01] in format YYYY-MM-DD: ");
 		SCANF("%s", stringDate);
+
+		// get date from the user input
+		struct userDate_t newDate = getDate(stringDate);
+
+		newYear = newDate.year;
+		newMonth = newDate.month;
+		newDay = newDate.day;
+
+		while((newYear < 1970) || (newMonth < 1 || newMonth > 12) || (newDay < 1 || newDay > 31)) {
+			PRINTF(RED_TEXT"\n\r*****  Invalid date [min val 1970-01-01] *****\n\r"
+					"Enter new date in format YYYY-MM-DD: "RESET_TEXT);
+			SCANF("%s", stringDate);
+
+			newDate = getDate(stringDate);
+
+			newYear = newDate.year;
+			newMonth = newDate.month;
+			newDay = newDate.day;
+		}
+
 		PRINTF("\n\rEnter new time in format HH-MM: ");
 		SCANF("%s", stringTime);
 		PRINTF("\n");
 
-		uint16_t newYear = ((stringDate[0] - 48) * 1000) +
-				((stringDate[1] - 48) * 100) +
-				((stringDate[2] - 48) * 10) +
-				((stringDate[3] - 48));
-		uint8_t newMonth = ((stringDate[5] - 48) * 10) + ((stringDate[6] - 48));
-		uint8_t newDay = ((stringDate[8] - 48) * 10) + ((stringDate[9] - 48));
+		struct userTime_t newTime = getTime(stringTime);
 
-		uint8_t newHour = ((stringTime[0] - 48) * 10) + ((stringTime[1] - 48));
-		uint8_t newMinute = ((stringTime[3] - 48) * 10) + ((stringTime[4] - 48));
+		newHour = newTime.hour;
+		newMinute = newTime.minute;
+
+		while((newHour < 0 || newHour > 23) || (newMinute < 0 || newMinute > 59))
+		{
+			PRINTF(RED_TEXT"\n\rInvalid time value, try again: "RESET_TEXT);
+			SCANF("%s", stringTime);
+
+			newTime = getTime(stringTime);
+
+			newHour = newTime.hour;
+			newMinute = newTime.minute;
+		}
 
 		RTC_1_dateTimeStruct.year = newYear;
 		RTC_1_dateTimeStruct.month = newMonth;
@@ -213,7 +241,7 @@ void timeConfig(void* pvParameters)
 #endif
 		RTC_StartTimer(RTC);
 		// enable ENC_BUTTON interrupt
-
+		GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO, 1 << BOARD_ENC_BUTTON_PIN);
 		NVIC_EnableIRQ(PORTB_IRQn);
 		//portEXIT_CRITICAL();
 		// delete itself

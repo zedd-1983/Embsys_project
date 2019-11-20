@@ -34,6 +34,7 @@
 // my added files
 #include "myTasks.h"
 #include "myDefines.h"
+#include "helperFunctions.h"
 
 // my variables
 TaskHandle_t ledTaskHandle = NULL;
@@ -59,44 +60,22 @@ void PORTB_IRQHandler()
 {
 	static uint8_t pressCount = 0;
 	BaseType_t xHigherPriorityTaskWoken;
-	bool encHappened = false;
-	bool tapHappened = false;
-	for(int i = 0; i < 2000000; i++);
 
-	if(GPIO_PortGetInterruptFlags(GPIOB) & BOARD_ENC_BUTTON_PIN)
-		encHappened = true;
-	else if (GPIO_PortGetInterruptFlags(GPIOB) & BOARD_TAP_PIN)
-		tapHappened = true;
+	// temporary solution to de-bouncing, far from ideal
+	busyWait(3000000);
 
 	GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO,
-			1 << BOARD_ENC_BUTTON_PIN | 1 << BOARD_TAP_PIN);
+			1 << BOARD_ENC_BUTTON_PIN);
 
 	xHigherPriorityTaskWoken = pdFALSE;
-	// if it's a first press, create encoder task and start it
-	if(true == encHappened) {
-#ifdef SHOW_MESSAGES
-		PRINTF("\n\rENC happened\n\r");
-#endif
-		if(++pressCount == 1) {
-			xSemaphoreGiveFromISR(startEncoderTaskSemaphore, &xHigherPriorityTaskWoken);
-			encHappened = false;
-		}
-		else	// otherwise it denotes confirmation of interval time
-		{
-			xSemaphoreGiveFromISR(encoderSemaphore, &xHigherPriorityTaskWoken);
-			pressCount = 0;
-			encHappened = false;
-		}
-	}
 
-	if(true == tapHappened)
-	{
-#ifdef SHOW_MESSAGES
-		PRINTF("\n\rTAP happened\n\r");
-#endif
-		// give semaphore to PIT to progress to next stage
-		xSemaphoreGiveFromISR(progressSemaphore, &xHigherPriorityTaskWoken);
-		tapHappened = false;
+	// if it's a first press, send semaphore to startupTask to create encoder task
+	if(++pressCount == 1) {
+		xSemaphoreGiveFromISR(startEncoderTaskSemaphore, &xHigherPriorityTaskWoken);
+	}
+	else { // it's a time confirmation
+		xSemaphoreGiveFromISR(encoderSemaphore, &xHigherPriorityTaskWoken);
+		pressCount = 0;
 	}
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
@@ -118,6 +97,7 @@ void PIT0_IRQHandler()
 	static uint16_t receivedInterval = 1;
 	static uint8_t loopCount = 0;
 	BaseType_t xHigherPriorityTaskWoken;
+
 	PIT_ClearStatusFlags(PIT, kPIT_Chnl_0, kPIT_TimerFlag);
 
 	xHigherPriorityTaskWoken = pdFALSE;
@@ -139,7 +119,7 @@ void PIT0_IRQHandler()
 			PRINTF(RED_TEXT"\n\r*********** Alarm ************\n\r"RESET_TEXT);
 #endif
 			if(++loopCount == 6) {	// keep looping until 6th iteration, then stop the alarms
-				PRINTF("\n\rFinished NOW\n\r");
+				PRINTF(GREEN_TEXT"\n\rFinished NOW\n\r"RESET_TEXT);
 				startCounting = false;
 				secondsCount = 0;
 				receivedInterval = 1;
