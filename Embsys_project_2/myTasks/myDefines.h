@@ -16,6 +16,6 @@
 #define RESET_TEXT 	"\033[0m"
 
 #define ENCODER_MAX	300
-#define ENCODER_MIN	60
+#define ENCODER_MIN	30
 
 #endif /* MYDEFINES_H_ */

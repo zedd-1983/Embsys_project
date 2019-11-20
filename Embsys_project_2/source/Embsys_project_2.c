@@ -42,7 +42,8 @@ TaskHandle_t startupTaskHandle = NULL;
 QueueHandle_t queueForPIT = NULL;
 
 extern SemaphoreHandle_t 	sw2Semaphore, sw3Semaphore, encoderSemaphore,
-							startEncoderTaskSemaphore, progressSemaphore;
+							startEncoderTaskSemaphore, progressSemaphore,
+							ledTaskDeleteSemaphore;
 
 uint32_t ledToOn = 0;
 
@@ -125,6 +126,7 @@ void PIT0_IRQHandler()
 				receivedInterval = 1;
 				loopCount = 0;
 				ledToOn = 0;
+				xSemaphoreGiveFromISR(ledTaskDeleteSemaphore, &xHigherPriorityTaskWoken);
 			}
 		}
 //		else if ((secondsCount < receivedInterval) &&	// if timer gets interrupted by another press
@@ -175,6 +177,7 @@ int main(void) {
     sw3Semaphore = xSemaphoreCreateBinary();
     encoderSemaphore = xSemaphoreCreateBinary();
     startEncoderTaskSemaphore = xSemaphoreCreateBinary();
+    ledTaskDeleteSemaphore = xSemaphoreCreateBinary();
 
     vTaskStartScheduler();
 
