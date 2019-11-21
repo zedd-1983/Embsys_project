@@ -18,4 +18,6 @@
 #define ENCODER_MAX	300
 #define ENCODER_MIN	30
 
+#define TIMEOUT 7
+
 #endif /* MYDEFINES_H_ */

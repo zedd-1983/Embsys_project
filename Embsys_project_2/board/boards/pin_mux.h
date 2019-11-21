@@ -95,6 +95,13 @@ void BOARD_InitBootPins(void);
 #define BOARD_TAP_PIN 19U    /*!<@brief PORTB pin index: 19 */
                              /* @} */
 
+/*! @name PORTC10 (number 82), J4[12]
+  @{ */
+#define BOARD_BUZZER_GPIO GPIOC /*!<@brief GPIO device name: GPIOC */
+#define BOARD_BUZZER_PORT PORTC /*!<@brief PORT device name: PORTC */
+#define BOARD_BUZZER_PIN 10U    /*!<@brief PORTC pin index: 10 */
+                                /* @} */
+
 /*!
  * @brief Configures pin routing and optionally pin electrical features.
  *

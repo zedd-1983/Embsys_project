@@ -8,11 +8,10 @@
 #ifndef MYTASKS_H_
 #define MYTASKS_H_
 
-
-void startupTask(void* pvParameters);
-void ledTask(void* pvParameters);
-void encoderRead(void* pvParameters);
-void timeConfig(void* pvParameters);
-//void tapSensorTask(void* pvParameters);
+void startupTask(void*);
+void ledTask(void*);
+void encoderRead(void*);
+void timeConfig(void*);
+void buzzerTask(void*);
 
 #endif /* MYTASKS_H_ */

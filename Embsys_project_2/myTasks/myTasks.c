@@ -21,7 +21,7 @@ TaskHandle_t			timeConfigTaskHandle = NULL;
 extern TaskHandle_t 	ledTaskHandle;
 SemaphoreHandle_t 		sw2Semaphore = NULL, sw3Semaphore = NULL,
 						startEncoderTaskSemaphore = NULL, encoderSemaphore = NULL,
-						progressSemaphore = NULL, ledTaskDeleteSemaphore = NULL;
+						timeoutSemaphore = NULL, ledTaskDeleteSemaphore = NULL;
 extern TaskHandle_t 	startupTaskHandle;
 extern QueueHandle_t 	queueForPIT;
 extern uint32_t 		ledToOn;
@@ -69,6 +69,7 @@ void startupTask(void* pvParameters)
 				PRINTF(RED_TEXT"\n\r\t***** TimeConfig task creation failed *****\n\r"RESET_TEXT);
 			}
 		}
+
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 }
@@ -246,7 +247,6 @@ void timeConfig(void* pvParameters)
 		// enable ENC_BUTTON interrupt
 		GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO, 1 << BOARD_ENC_BUTTON_PIN);
 		NVIC_EnableIRQ(PORTB_IRQn);
-		//portEXIT_CRITICAL();
 		// delete itself
 		vTaskDelete(NULL);
 	}
@@ -256,6 +256,14 @@ void buzzerTask(void* pvParameters)
 {
 	for(;;)
 	{
+		for(int i = 0; i< 2000; i++) {
+			GPIO_PortToggle(BOARD_BUZZER_GPIO, 1 << BOARD_BUZZER_PIN);
+			busyWait(5000);
+		}
+		GPIO_PinWrite(BOARD_BUZZER_GPIO, BOARD_BUZZER_PIN, 0);
+		vTaskDelay(300);
+
+		// terminate buzzer task if semaphore from tap interrupt is received
 		vTaskDelete(NULL);
 	}
 }

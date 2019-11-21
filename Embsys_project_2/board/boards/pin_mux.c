@@ -55,7 +55,7 @@ pin_labels:
 - {pin_num: '58', pin_signal: ADC1_SE14/PTB10/SPI1_PCS0/UART3_RX/FB_AD19/FTM0_FLT1, label: 'J4[6]', identifier: ENC_CLK}
 - {pin_num: '59', pin_signal: ADC1_SE15/PTB11/SPI1_SCK/UART3_TX/FB_AD18/FTM0_FLT2, label: 'J4[8]'}
 - {pin_num: '83', pin_signal: ADC1_SE7b/PTC11/LLWU_P11/I2C1_SDA/FTM3_CH7/I2S0_RXD1/FB_RW_b, label: 'J4[10]'}
-- {pin_num: '82', pin_signal: ADC1_SE6b/PTC10/I2C1_SCL/FTM3_CH6/I2S0_RX_FS/FB_AD5, label: 'J4[12]'}
+- {pin_num: '82', pin_signal: ADC1_SE6b/PTC10/I2C1_SCL/FTM3_CH6/I2S0_RX_FS/FB_AD5, label: 'J4[12]', identifier: BUZZER}
 - {pin_num: '38', pin_signal: PTA4/LLWU_P3/FTM0_CH1/NMI_b/EZP_CS_b, label: SW3, identifier: SW3}
 - {pin_num: '78', pin_signal: CMP0_IN0/PTC6/LLWU_P10/SPI0_SOUT/PDB0_EXTRG/I2S0_RX_BCLK/FB_AD9/I2S0_MCLK, label: 'U8[11]/SW2', identifier: SW2;ACCEL_INT1}
 - {pin_num: '52', pin_signal: RESET_b, label: 'J3[6]/J9[10]/D1/RESET', identifier: RESET}
@@ -158,6 +158,8 @@ BOARD_InitPins:
     drive_strength: high}
   - {pin_num: '65', peripheral: GPIOB, signal: 'GPIO, 19', pin_signal: PTB19/CAN0_RX/FTM2_CH1/I2S0_TX_FS/FB_OE_b/FTM2_QD_PHB, direction: INPUT, gpio_interrupt: kPORT_InterruptFallingEdge,
     pull_enable: enable}
+  - {pin_num: '82', peripheral: GPIOC, signal: 'GPIO, 10', pin_signal: ADC1_SE6b/PTC10/I2C1_SCL/FTM3_CH6/I2S0_RX_FS/FB_AD5, direction: OUTPUT, drive_strength: high,
+    pull_enable: enable}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 /* clang-format on */
@@ -247,6 +249,13 @@ void BOARD_InitPins(void)
     /* Initialize GPIO functionality on pin PTC9 (pin 81)  */
     GPIO_PinInit(BOARD_LED4_GPIO, BOARD_LED4_PIN, &LED4_config);
 
+    gpio_pin_config_t BUZZER_config = {
+        .pinDirection = kGPIO_DigitalOutput,
+        .outputLogic = 0U
+    };
+    /* Initialize GPIO functionality on pin PTC10 (pin 82)  */
+    GPIO_PinInit(BOARD_BUZZER_GPIO, BOARD_BUZZER_PIN, &BUZZER_config);
+
     /* PORTA2 (pin 36) is configured as TRACE_SWO */
     PORT_SetPinMux(PORTA, 2U, kPORT_MuxAlt7);
 
@@ -333,6 +342,20 @@ void BOARD_InitPins(void)
                      /* Drive Strength Enable: High drive strength is configured on the corresponding pin, if pin
                       * is configured as a digital output. */
                      | PORT_PCR_DSE(kPORT_HighDriveStrength));
+
+    /* PORTC10 (pin 82) is configured as PTC10 */
+    PORT_SetPinMux(BOARD_BUZZER_PORT, BOARD_BUZZER_PIN, kPORT_MuxAsGpio);
+
+    PORTC->PCR[10] = ((PORTC->PCR[10] &
+                       /* Mask bits to zero which are setting */
+                       (~(PORT_PCR_PE_MASK | PORT_PCR_DSE_MASK | PORT_PCR_ISF_MASK)))
+
+                      /* Pull Enable: Internal pullup or pulldown resistor is enabled on the corresponding pin. */
+                      | (uint32_t)(PORT_PCR_PE_MASK)
+
+                      /* Drive Strength Enable: High drive strength is configured on the corresponding pin, if
+                       * pin is configured as a digital output. */
+                      | PORT_PCR_DSE(kPORT_HighDriveStrength));
 
     /* PORTC5 (pin 77) is configured as PTC5 */
     PORT_SetPinMux(BOARD_LED1_PORT, BOARD_LED1_PIN, kPORT_MuxAsGpio);

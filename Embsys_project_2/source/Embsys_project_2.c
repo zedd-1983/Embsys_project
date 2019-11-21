@@ -42,7 +42,7 @@ TaskHandle_t startupTaskHandle = NULL;
 QueueHandle_t queueForPIT = NULL;
 
 extern SemaphoreHandle_t 	sw2Semaphore, sw3Semaphore, encoderSemaphore,
-							startEncoderTaskSemaphore, progressSemaphore,
+							startEncoderTaskSemaphore, timeoutSemaphore,
 							ledTaskDeleteSemaphore;
 
 uint32_t ledToOn = 0;
@@ -51,7 +51,6 @@ void PORTC_IRQHandler()
 {
 	BaseType_t xHigherPriorityTaskWoken;
 	GPIO_PortClearInterruptFlags(BOARD_SW2_GPIO, 1 << BOARD_SW2_GPIO_PIN);
-
 	xHigherPriorityTaskWoken = pdFALSE;
 	xSemaphoreGiveFromISR(sw2Semaphore, &xHigherPriorityTaskWoken);
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -65,8 +64,7 @@ void PORTB_IRQHandler()
 	// temporary solution to de-bouncing, far from ideal
 	busyWait(3000000);
 
-	GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO,
-			1 << BOARD_ENC_BUTTON_PIN);
+	GPIO_PortClearInterruptFlags(BOARD_ENC_BUTTON_GPIO, 1 << BOARD_ENC_BUTTON_PIN);
 
 	xHigherPriorityTaskWoken = pdFALSE;
 
@@ -85,7 +83,6 @@ void PORTA_IRQHandler()
 {
 	BaseType_t xHigherPriorityTaskWoken;
 	GPIO_PortClearInterruptFlags(BOARD_SW3_GPIO, 1 << BOARD_SW3_GPIO_PIN);
-
 	xHigherPriorityTaskWoken = pdFALSE;
 	xSemaphoreGiveFromISR(sw3Semaphore, &xHigherPriorityTaskWoken);
 	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -97,6 +94,8 @@ void PIT0_IRQHandler()
 	static bool startCounting = false;
 	static uint16_t receivedInterval = 1;
 	static uint8_t loopCount = 0;
+	//static uint8_t timeout = 0;
+	static uint8_t ledInterval = 0;
 	BaseType_t xHigherPriorityTaskWoken;
 
 	PIT_ClearStatusFlags(PIT, kPIT_Chnl_0, kPIT_TimerFlag);
@@ -107,18 +106,15 @@ void PIT0_IRQHandler()
 		PRINTF(GREEN_TEXT"\n\rReceived: %d\n\r"RESET_TEXT, receivedInterval);
 #endif
 		xTaskNotifyFromISR(ledTaskHandle, ++ledToOn, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+		ledInterval = receivedInterval / 6;
 		startCounting = true;
 	}
 
 	if(startCounting == true) {
 		secondsCount++;
-		if(secondsCount == (receivedInterval / 6)) {	// if timer expires in 1/6th
-			secondsCount = 0;
-			// notify LED task to switch appropriate LED on
+		if(secondsCount == ledInterval) {	// if timer expires in 1/6th
 			xTaskNotifyFromISR(ledTaskHandle, ++ledToOn, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
-#ifdef SHOW_MESSAGES
-			PRINTF(RED_TEXT"\n\r*********** Alarm ************\n\r"RESET_TEXT);
-#endif
+			secondsCount = 0;
 			if(++loopCount == 6) {	// keep looping until 6th iteration, then stop the alarms
 				PRINTF(GREEN_TEXT"\n\rFinished NOW\n\r"RESET_TEXT);
 				startCounting = false;
@@ -158,6 +154,7 @@ int main(void) {
     NVIC_ClearPendingIRQ(BOARD_SW3_IRQ);
     NVIC_EnableIRQ(BOARD_SW3_IRQ);
 
+    // encoder switch
     NVIC_SetPriority(PORTB_IRQn, 7);
     NVIC_ClearPendingIRQ(PORTB_IRQn);
     NVIC_EnableIRQ(PORTB_IRQn);
@@ -168,7 +165,7 @@ int main(void) {
     PRINTF("\nPress encoder button to select the interval,\n\rpress again to confirm\n\r");
     PRINTF("\nPress SW2 to configure time and date of the system\n\r");
 
-    if(xTaskCreate(startupTask, "Startup task", configMINIMAL_STACK_SIZE + 20, NULL, 2, &startupTaskHandle) == pdFAIL)
+    if(xTaskCreate(startupTask, "Startup task", configMINIMAL_STACK_SIZE + 50, NULL, 2, &startupTaskHandle) == pdFAIL)
     {
     	PRINTF(RED_TEXT"\n\r\t***** Startup task creation failed *****\n\r"RESET_TEXT);
     }
