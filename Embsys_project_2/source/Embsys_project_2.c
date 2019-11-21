@@ -170,6 +170,7 @@ int main(void) {
     	PRINTF(RED_TEXT"\n\r\t***** Startup task creation failed *****\n\r"RESET_TEXT);
     }
 
+
     sw2Semaphore = xSemaphoreCreateBinary();
     sw3Semaphore = xSemaphoreCreateBinary();
     encoderSemaphore = xSemaphoreCreateBinary();
