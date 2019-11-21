@@ -162,6 +162,7 @@ void encoderRead(void* pvParameters)
 			PRINTF("\n\rDeleting Encoder Task\n\r");
 #endif
 			NVIC_EnableIRQ(BOARD_SW2_IRQ);
+			// delete itself
 			vTaskDelete(NULL);
 		}
 	}
