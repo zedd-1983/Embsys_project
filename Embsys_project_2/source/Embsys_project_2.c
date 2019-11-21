@@ -159,6 +159,7 @@ int main(void) {
     NVIC_ClearPendingIRQ(PORTB_IRQn);
     NVIC_EnableIRQ(PORTB_IRQn);
 
+
     queueForPIT = xQueueCreate(1, sizeof(uint16_t));
 
     PRINTF(GREEN_TEXT"FreeRTOS Project\n\r"RED_TEXT"Toothbrushing Application\n\n\r"RESET_TEXT);
